@@ -187,7 +187,69 @@ def multiple_plots(plot_list, plot_function, keywords, clms=2, ext_axs=None, **k
         return axs
 
 
-def firing_rate_instogram(fr_list, CV_list, name_list, dopa_depl, mode, target_fr=None):
+def plot_my_histogram(ax, width, value_list, name_list, target_list, y_label):
+    x = list(range(len(value_list)))
+    t = []
+    tval = []
+
+    if target_list is not None:
+        for idx, val in enumerate(target_list):
+            if val != 0:
+                t = t + [x[idx] + width]  # place it the right
+                tval = tval + [np.round(val, 2)]
+
+    ax.set_xticks(np.array(x))
+    ax.set_xticklabels(name_list)
+
+    width = width * 0.9
+    bars1 = ax.bar(x, value_list, width, label='Simulation')
+    ax.bar_label(bars1, rotation=60)
+
+    if target_list is not None:
+        bars2 = ax.bar(t, tval, width, label='Reference')
+        ax.bar_label(bars2, rotation=60)
+
+    if target_list is not None:
+        ax.set_ylim(0, max(value_list + target_list) * 1.4)
+    else:
+        ax.set_ylim(0, max(value_list) * 1.4)
+
+    ax.legend(loc='upper left')   # , bbox_to_anchor=(0.14, 1.0))
+
+    ax.set_ylabel(y_label)
+
+    ax.tick_params(bottom=False)
+
+
+def firing_rate_histogram(fr_list, name_list, CV_list=None, target_fr=None, target_CV=None):
+    ''' Bar plot of the avarage firing rates of the population rasters '''
+
+    fig_width = 6.0
+    width = 0.4  # columns width
+    plot_height = 2.5
+
+    if CV_list == None:
+        rows = 1  # one for fr
+    else:
+        rows = 2  # one for fr and onw fo CV
+    fig, axes = plt.subplots(rows, 1, figsize=(fig_width, plot_height * rows))
+    if rows == 1: axes = [axes]
+
+    # plot afr
+    plot_my_histogram(axes[0], width, fr_list, name_list, target_fr, 'Firing rate [Hz]')
+
+    if CV_list != None:
+        # plot CV
+        plot_my_histogram(axes[1], width, CV_list, name_list, target_CV, 'CV []')
+
+    fig.suptitle(f'Average firing rate')  # in mode: {mode}')
+
+    fig.tight_layout()
+
+    return fig, axes
+
+
+def firing_rate_histogram_old(fr_list, CV_list, name_list, dopa_depl, mode, target_fr=None):
     ''' Bar plot of the avarage firing rates of the population rasters '''
 
     fig_width = 8.0
@@ -239,8 +301,6 @@ def firing_rate_instogram(fr_list, CV_list, name_list, dopa_depl, mode, target_f
 
     ax.set_facecolor('#f0f7f4')
     fig.patch.set_facecolor('#f0f7f4')
-
-    print(plt.rcParams.keys())
 
     plt.rcParams.update({'text.color': "#2d2a32",
                          'axes.labelcolor': "#2d2a32",
