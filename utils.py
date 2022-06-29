@@ -3,7 +3,7 @@ import numpy as np
 from scipy import signal
 from scipy import io
 from scipy.fft import fft, fftfreq
-from misc import visualizer as vsl
+import visualizer as vsl
 from pathlib import Path
 import pickle
 
