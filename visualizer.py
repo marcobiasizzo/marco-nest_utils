@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.fft import fft, fftfreq
 from scipy import signal
-from misc import utils
+from marco_nest_utils import utils
 from fooof import FOOOF
 import pickle
 from math import ceil
