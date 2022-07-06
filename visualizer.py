@@ -220,6 +220,32 @@ def plot_my_histogram(ax, width, value_list, name_list, target_list, y_label):
 
     ax.tick_params(bottom=False)
 
+def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0.):
+    if ax_plt is None:
+        fig, ax = plt.subplots()  # create a new figure
+    else:
+        ax = ax_plt
+
+    pop_instant_fr = instant_fr.sum(axis=0) / 1000.     # every [ms]
+
+    ax.plot(times, pop_instant_fr, label=f'{compartment_name} potential', color='tab:blue')
+    # ax.axvline(x=t_start, color='tab:red')
+    ax.set_xlabel('Time [ms]')  # Add an x-label to the axes.
+    ax.set_ylabel(f'{compartment_name} a.f.r. [sp./ms]')  # Add a y-label to the axes.
+    # ax.set_title(f"{compartment_name} potential")  # Add a title to the axes.
+    # ax.legend()  # Add a legend.
+    if ax_plt is None:
+        res = fig, ax
+    else:
+        res = ax
+    return res
+
+
+def plot_instant_fr_multiple(instant_fr_list, clms=2, t_start=0.):
+    keywords = {'x_data': 'times', 'y_data': 'instant_fr', 'name': 'name'}
+    return multiple_plots(instant_fr_list, plot_instant_fr, keywords, clms=clms,
+                          t_start=t_start)
+
 
 def firing_rate_histogram(fr_list, name_list, CV_list=None, target_fr=None, target_CV=None):
     ''' Bar plot of the avarage firing rates of the population rasters '''
@@ -865,7 +891,7 @@ def plot_mass_frs(fr_array, start_stop_times, legend_labels, u_array=None, xlim=
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"][1:]  # don't use blue color as in Cereb
     ax.set_prop_cycle(color=colors)
 
-    fr_array = fr_array[15000:]
+    # fr_array = fr_array[15000:]
     t_array = np.linspace(start_stop_times[0], start_stop_times[1], fr_array.shape[0])
     ax.grid(linestyle='-.')
     ax.plot(t_array, fr_array)

@@ -185,6 +185,45 @@ def calculate_fr(raster_list, pop_dim_ids, t_start=0., t_end=None, return_CV_nam
     else:
         return fr_list
 
+
+def fr_window_step(raster_list, pop_dim_ids, sim_time, window, step):
+    '''
+    calculate punctual fr per neuron
+    sim_time, window, step in [ms]
+    '''
+
+    ret_list = []
+
+    for raster in raster_list:
+        pop_name = raster['compartment_name']
+        t = raster['times']
+        i = raster['neurons_idx'] - pop_dim_ids[pop_name][0]
+        pop_dim = pop_dim_ids[pop_name][1] - pop_dim_ids[pop_name][0] + 1
+
+        elem_len = int((sim_time - window) / step) + 1
+        firing = np.zeros((pop_dim, elem_len))
+
+        for index, time in zip(i, t):
+            last_window_index = int(time / step)  # index in the array for the last window containing the firing
+            dt = time - (last_window_index * step)  # time from t and the beginning of the last window
+            how_many_wind_before = int((window - dt) / step)  # how many windows before contain the firing
+            for j in range(how_many_wind_before + 1):
+                elem = last_window_index - j
+                if 0 <= elem < elem_len: # if spike at the last ms, do not count following "out" window
+                    firing[int(index), elem] += 1
+
+        # print(firing[0,:])
+        fr = firing / (window / 1000.0)
+
+        central_windows_time = np.linspace(window/2., sim_time-window/2., elem_len)
+
+        ret = {'times': central_windows_time, 'instant_fr': fr, 'name': pop_name}
+
+        ret_list = ret_list + [ret]
+
+    return ret_list
+
+
 def add_spikes_to_potential(rasters, index, ax, pot_min=-50, pot_max=0):
     min_idx = min(rasters[index]['neurons_idx'])
     condition = lambda x: x == min_idx
