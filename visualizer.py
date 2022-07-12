@@ -210,9 +210,9 @@ def plot_my_histogram(ax, width, value_list, name_list, target_list, y_label):
         ax.bar_label(bars2, rotation=60)
 
     if target_list is not None:
-        ax.set_ylim(0, max(value_list + target_list) * 1.4)
+        ax.set_ylim(0, max(np.max(value_list), np.max(target_list)) * 1.4)
     else:
-        ax.set_ylim(0, max(value_list) * 1.4)
+        ax.set_ylim(0, np.max(value_list) * 1.4)
 
     ax.legend(loc='upper left')   # , bbox_to_anchor=(0.14, 1.0))
 
