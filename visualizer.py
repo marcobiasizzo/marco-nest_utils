@@ -247,6 +247,42 @@ def plot_instant_fr_multiple(instant_fr_list, clms=2, t_start=0.):
                           t_start=t_start)
 
 
+def plot_fr_learning(instant_fr_io, t_start, t_end, trials):
+    fig_width = 6.0
+    plot_height = 2.5
+
+    fig, ax = plt.subplots(1, 1, figsize=(fig_width, plot_height))
+
+    averages = []
+    sds = []
+    times = []
+
+    for k in range(trials):
+        t0 = t_end * k          # trial init
+        tf = t0 + t_start       # before IO spikes
+
+        sel_times1 = instant_fr_io['times'] < tf
+        sel_times2 = instant_fr_io['times'] >= t0
+        sel_times = np.logical_and(sel_times1, sel_times2)
+        sel_fr = instant_fr_io['instant_fr'].mean(axis=0)[sel_times]
+
+        average = np.mean(sel_fr)
+        sd = np.std(sel_fr)
+
+        averages += [average]
+        sds += [sd]
+        times += [(t0+tf)*0.5]
+
+    av = np.array(averages)
+    sd = np.array(sds)
+    tm = np.array(times)
+
+    # ax.scatter(tm, av)
+    plt.errorbar(tm, av, sd, marker='o')
+
+    return fig, ax
+
+
 def firing_rate_histogram(fr_list, name_list, CV_list=None, target_fr=None, target_CV=None):
     ''' Bar plot of the avarage firing rates of the population rasters '''
 
