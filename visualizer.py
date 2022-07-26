@@ -247,39 +247,45 @@ def plot_instant_fr_multiple(instant_fr_list, clms=2, t_start=0.):
                           t_start=t_start)
 
 
-def plot_fr_learning(instant_fr_io, t_start, t_end, trials):
-    fig_width = 6.0
-    plot_height = 2.5
+def plot_fr_learning(instant_fr_io, t_start, t_end, t_pre, trials, pop, labels=None):
+    fig_width = 7.0
+    plot_height = 5.0
 
     fig, ax = plt.subplots(1, 1, figsize=(fig_width, plot_height))
+    number_shift = len(instant_fr_io) - 1
+    time_shift = np.linspace(-number_shift, number_shift, number_shift+1) * 25
 
-    averages = []
-    sds = []
-    times = []
+    for io_fr, t_shift in zip(instant_fr_io, time_shift):
+        averages = []
+        sds = []
+        times = []
 
-    for k in range(trials):
-        t0 = t_end * k          # trial init
-        tf = t0 + t_start       # before IO spikes
+        for k in range(trials):
+            t0 = t_pre + t_end * k          # trial init
+            tf = t_pre + t0 + t_start       # before IO spikes
 
-        sel_times1 = instant_fr_io['times'] < tf
-        sel_times2 = instant_fr_io['times'] >= t0
-        sel_times = np.logical_and(sel_times1, sel_times2)
-        sel_fr = instant_fr_io['instant_fr'].mean(axis=0)[sel_times]
+            sel_times1 = io_fr['times'] < tf
+            sel_times2 = io_fr['times'] >= t0
+            sel_times = np.logical_and(sel_times1, sel_times2)
+            sel_fr = io_fr['instant_fr'].mean(axis=0)[sel_times]
 
-        average = np.mean(sel_fr)
-        sd = np.std(sel_fr)
+            print(t0, tf)
+            average = np.mean(sel_fr)
+            sd = np.std(sel_fr)
 
-        averages += [average]
-        sds += [sd]
-        times += [(t0+tf)*0.5]
+            averages += [average]
+            sds += [sd]
+            times += [(t0+tf)*0.5 + t_shift]
 
-    av = np.array(averages)
-    sd = np.array(sds)
-    tm = np.array(times)
+        av = np.array(averages)
+        sd = np.array(sds)
+        tm = np.array(times)
 
-    # ax.scatter(tm, av)
-    plt.errorbar(tm, av, sd, marker='o')
+        # ax.scatter(tm, av)
+        plt.errorbar(tm, av, sd, marker='o')
 
+    ax.set_title(f'Average firing rate of {pop} over trials')
+    ax.legend(labels)
     return fig, ax
 
 
