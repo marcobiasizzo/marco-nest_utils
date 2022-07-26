@@ -262,7 +262,7 @@ def plot_fr_learning(instant_fr_io, t_start, t_end, t_pre, trials, pop, labels=N
 
         for k in range(trials):
             t0 = t_pre + t_end * k          # trial init
-            tf = t_pre + t0 + t_start       # before IO spikes
+            tf = t0 + t_start       # before IO spikes
 
             sel_times1 = io_fr['times'] < tf
             sel_times2 = io_fr['times'] >= t0
