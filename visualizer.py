@@ -269,7 +269,6 @@ def plot_fr_learning(instant_fr_io, t_start, t_end, t_pre, trials, pop, labels=N
             sel_times = np.logical_and(sel_times1, sel_times2)
             sel_fr = io_fr['instant_fr'].mean(axis=0)[sel_times]
 
-            print(t0, tf)
             average = np.mean(sel_fr)
             sd = np.std(sel_fr)
 
@@ -921,7 +920,7 @@ def combine_axes_in_figure(rasters_list, fr_array, start_stop_times=None, legend
     return fig, axs
 
 
-def plot_mass_frs(fr_array, start_stop_times, legend_labels, u_array=None, xlim=None, ylim=None, ext_ax=None, title=None):
+def plot_mass_frs(fr_array, tot_sim_time, time_step, legend_labels, u_array=None, xlim=None, ylim=None, ext_ax=None, title=None):
     """ Plot the equivalent firing rate of the mass models """
     fig_width = 8.0
     plot_height = 4.0
@@ -934,7 +933,7 @@ def plot_mass_frs(fr_array, start_stop_times, legend_labels, u_array=None, xlim=
     ax.set_prop_cycle(color=colors)
 
     # fr_array = fr_array[15000:]
-    t_array = np.linspace(start_stop_times[0], start_stop_times[1], fr_array.shape[0])
+    t_array = np.linspace(0, tot_sim_time, int(tot_sim_time)+1)
     ax.grid(linestyle='-.')
     ax.plot(t_array, fr_array)
     if u_array is not None:
