@@ -697,7 +697,7 @@ def plot_fourier_transform(fr_array, T_sample, legend_labels, mean=None, sd=None
     return fig, ax
 
 
-def plot_wavelet_transform(fr_array, T_sample, legend_labels, mean=None, sd=None, t_start=0., y_range=None):
+def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, sd=None, t_start=0., y_range=None):
     """ Plot the discrete fourier transform of the mass models """
     fig_width = 6.
     plot_height = 4.
@@ -707,7 +707,8 @@ def plot_wavelet_transform(fr_array, T_sample, legend_labels, mean=None, sd=None
     ax.set_prop_cycle(color=colors)
 
     T = T_sample / 10.
-    y = fr_array[int(t_start / T):, :]  # calculate tf after the t_start
+    sel_mass_times = mass_models_sol["mass_frs_times"] > t_start
+    y = mass_models_sol["mass_frs"][sel_mass_times, :]  # calculate tf after the t_start
 
     T = T_sample    # resample to 1 ms
     y = y[::10]     # select one time sample every 10
@@ -782,7 +783,7 @@ def plot_wavelet_transform(fr_array, T_sample, legend_labels, mean=None, sd=None
     return fig, ax, diff
 
 
-def plot_wavelet_transform_and_mass(fr_array, T_sample, legend_labels, mean=None, sd=None, t_start=0., t_end=0., y_range=None):
+def plot_wavelet_transform_and_mass(mass_models_sol, T_sample, legend_labels, mean=None, sd=None, t_start=0., t_end=0., y_range=None):
     """ Plot the discrete fourier transform of the mass models """
     fig_width = 10.
     plot_height = 3.
@@ -790,7 +791,7 @@ def plot_wavelet_transform_and_mass(fr_array, T_sample, legend_labels, mean=None
     fig, axes = plt.subplots(1, 2, figsize=(fig_width, plot_height))
 
     ax = axes[0]
-    plot_mass_frs(fr_array, [1500, t_end], legend_labels, ext_ax=ax)
+    plot_mass_frs(mass_models_sol, legend_labels, ext_ax=ax)
 
     for item in [ax.title, ax.xaxis.label, ax.yaxis.label]:
         item.set_fontsize(12)
@@ -803,7 +804,8 @@ def plot_wavelet_transform_and_mass(fr_array, T_sample, legend_labels, mean=None
     ax.set_prop_cycle(color=colors)
 
     T = T_sample / 10.
-    y = fr_array[int(t_start / T):, :]  # calculate tf after the t_start
+    sel_mass_times = mass_models_sol["mass_frs_times"] > t_start
+    y = mass_models_sol["mass_frs"][sel_mass_times, :]  # calculate tf after the t_start
 
     T = T_sample    # resample to 1 ms
     y = y[::10]     # select one time sample every 10
@@ -878,7 +880,7 @@ def plot_wavelet_transform_and_mass(fr_array, T_sample, legend_labels, mean=None
     return fig, ax, diff
 
 
-def combine_axes_in_figure(rasters_list, fr_array, start_stop_times=None, legend_labels=None, clms=2, t_start=0.,
+def combine_axes_in_figure(rasters_list, mass_models_sol, legend_labels=None, clms=2, t_start=0.,
                            ylim=None):
     """ Plot rasters and the equivalent firing rate of the mass models """
     n_plots = len(rasters_list)
@@ -888,10 +890,10 @@ def combine_axes_in_figure(rasters_list, fr_array, start_stop_times=None, legend
     fig, axs = plt.subplots(rows, clms, figsize=(fig_width * clms, plot_height * rows))
 
     keywords = {'x_data': 'times', 'y_data': 'neurons_idx', 'name': 'compartment_name'}
-    multiple_plots(rasters_list, raster_plot, keywords, clms=clms, ext_axs=axs[:-1], start_stop_times=start_stop_times,
+    multiple_plots(rasters_list, raster_plot, keywords, clms=clms, ext_axs=axs[:-1],
                    t_start=t_start)
 
-    plot_mass_frs(fr_array, start_stop_times, legend_labels, None, ylim, ext_ax=axs[-1])
+    plot_mass_frs(mass_models_sol, legend_labels, xlim=None, ylim=ylim, ext_ax=axs[-1])
     for item in [axs[-1].title, axs[-1].xaxis.label, axs[-1].yaxis.label]:
         item.set_fontsize(3. * 5)
 
@@ -920,7 +922,7 @@ def combine_axes_in_figure(rasters_list, fr_array, start_stop_times=None, legend
     return fig, axs
 
 
-def plot_mass_frs(fr_array, tot_sim_time, time_step, legend_labels, u_array=None, xlim=None, ylim=None, ext_ax=None, title=None):
+def plot_mass_frs(mass_models_sol, legend_labels, u_array=False, xlim=None, ylim=None, ext_ax=None, title=None):
     """ Plot the equivalent firing rate of the mass models """
     fig_width = 8.0
     plot_height = 4.0
@@ -933,11 +935,10 @@ def plot_mass_frs(fr_array, tot_sim_time, time_step, legend_labels, u_array=None
     ax.set_prop_cycle(color=colors)
 
     # fr_array = fr_array[15000:]
-    t_array = np.linspace(0, tot_sim_time, int(tot_sim_time)+1)
     ax.grid(linestyle='-.')
-    ax.plot(t_array, fr_array)
-    if u_array is not None:
-        ax.plot(t_array, u_array)
+    ax.plot(mass_models_sol['mass_frs_times'], mass_models_sol['mass_frs'])
+    if u_array:
+        ax.plot(mass_models_sol['mass_frs_times'], mass_models_sol['in_frs'])
     scale_xy_axes(ax, xlim, ylim)
     ax.set_xlabel('Time [ms]')
     ax.set_ylabel(f'Activity [sp/(neu*s)]')
