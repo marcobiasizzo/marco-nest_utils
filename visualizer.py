@@ -97,6 +97,15 @@ def raster_plot(times, neurons_idx, compartment_name, ax_plt=None, start_stop_ti
             ax.plot(np.linspace(0, len(ctx_in)*10, len(ctx_in)), min(neurons_idx) + ctx_in / max(ctx_in) * (max(neurons_idx) - min(neurons_idx)), c='tab:orange', linewidth=2., alpha=0.8)
         else:
             ax.scatter(times, neurons_idx, c='tab:blue', s=4)
+            if compartment_name == 'purkinje':
+                mylist = sorted(neurons_idx)
+                mylist2 = list(dict.fromkeys(mylist))
+                occ = []
+                for key in mylist2:
+                    occr = mylist.count(key)
+                    occ += [occr]
+                # print(compartment_name, len(mylist), mylist)
+                print(occ)
         max_idx = max(neurons_idx)
         min_idx = min(neurons_idx)
         if max_idx - min_idx >= 4:
