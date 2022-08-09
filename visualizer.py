@@ -247,7 +247,30 @@ def plot_instant_fr_multiple(instant_fr_list, clms=2, t_start=0.):
                           t_start=t_start)
 
 
-def plot_fr_learning(instant_fr_io, t_start, t_end, t_pre, trials, pop, labels=None):
+def plot_fr_learning1(average_fr_per_trial, pop_names_list, pop_name, labels=None):
+    fig_width = 7.0
+    plot_height = 5.0
+
+    fig, ax = plt.subplots(1, 1, figsize=(fig_width, plot_height))
+    number_shift = len(average_fr_per_trial) - 1
+    time_shift = np.linspace(-number_shift, number_shift, number_shift+1) * 0.05
+
+    for av_fr_per_trial, t_shift in zip(average_fr_per_trial, time_shift):
+        averages = av_fr_per_trial[pop_name]
+        times = np.linspace(1 + t_shift, len(averages) + 1 + t_shift, len(averages))
+
+        av = np.array(averages)
+        # sd = np.array(sds)
+        tm = np.array(times)
+
+        ax.plot(tm, av, marker='o')
+        # plt.errorbar(tm, av, sd, marker='o')
+
+    ax.set_title(f'Average firing rate of {pop_name} over trials')
+    ax.legend(labels)
+    return fig, ax
+
+def plot_fr_learning2(instant_fr_io, t_start, t_end, t_pre, trials, pop, labels=None):
     fig_width = 7.0
     plot_height = 5.0
 

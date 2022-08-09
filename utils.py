@@ -168,7 +168,6 @@ def calculate_fr(raster_list, pop_dim_ids, t_start=0., t_end=None, return_CV_nam
                         if ISI != 0:
                             ISI_list[idx] = ISI_list[idx] + [ISI]
                             t_prev[idx] = tt  # update the last spike time
-
         # we calculate the average ISI for each neuron, comprehends also neurons with fr = 0
         inv_mean_ISI = np.array([1000. / (sum(elem) / len(elem)) if len(elem) != 0 else 0. for elem in ISI_list])
         fr = inv_mean_ISI.mean()
@@ -424,3 +423,20 @@ def get_cortex_activity(dopa_depl, sim_time, sim_period):
     extended_ctx_frs = np.tile(ctx_frs[1000:], 3)
 
     return extended_ctx_frs
+
+
+def average_fr_per_trial(rasters, pop_ids, t_start, t_end, settling_time, trials):
+    av_fr_list = []
+    for k in range(trials):
+        t0 = settling_time + t_end * k  # trial init
+        tf = t0 + t_start  # before IO spikes
+
+        # note that the previous stimulation may effect the first instants of the following one
+        av_fr = calculate_fr_stats(rasters, pop_ids, t_start=t0, t_end=tf)
+        av_fr_list += [av_fr['fr']]
+
+    av_fr_dic = {}
+    for i, name in enumerate(av_fr['name']):
+        av_fr_dic[name] = [fr[i] for fr in av_fr_list]
+
+    return av_fr_dic
