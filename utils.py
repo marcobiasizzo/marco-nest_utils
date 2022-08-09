@@ -425,18 +425,22 @@ def get_cortex_activity(dopa_depl, sim_time, sim_period):
     return extended_ctx_frs
 
 
-def average_fr_per_trial(rasters, pop_ids, t_start, t_end, settling_time, trials):
-    av_fr_list = []
+def average_fr_per_trial(rasters_list_list, pop_ids, t_start, t_end, settling_time, trials):
+    av_fr_list_list = []
     for k in range(trials):
         t0 = settling_time + t_end * k  # trial init
         tf = t0 + t_start  # before IO spikes
 
-        # note that the previous stimulation may effect the first instants of the following one
-        av_fr = calculate_fr_stats(rasters, pop_ids, t_start=t0, t_end=tf)
-        av_fr_list += [av_fr['fr']]
+        av_fr_list = []
+        for rr in rasters_list_list:
+            # note that the previous stimulation may effect the first instants of the following one
+            av_fr = calculate_fr_stats(rr, pop_ids, t_start=t0, t_end=tf)
+            av_fr_list += [av_fr['fr']]
+
+        av_fr_list_list += [av_fr_list]
 
     av_fr_dic = {}
     for i, name in enumerate(av_fr['name']):
-        av_fr_dic[name] = [fr[i] for fr in av_fr_list]
+        av_fr_dic[name] = [[fr[i] for fr in av_fr_list] for av_fr_list in av_fr_list_list]
 
     return av_fr_dic

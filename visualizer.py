@@ -265,15 +265,15 @@ def plot_fr_learning1(average_fr_per_trial, pop_names_list, pop_name, labels=Non
     time_shift = np.linspace(-number_shift, number_shift, number_shift+1) * 0.05
 
     for av_fr_per_trial, t_shift in zip(average_fr_per_trial, time_shift):
-        averages = av_fr_per_trial[pop_name]
-        times = np.linspace(1 + t_shift, len(averages) + 1 + t_shift, len(averages))
+        averages = np.array(av_fr_per_trial[pop_name])
+        times = np.linspace(1 + t_shift, len(averages) + t_shift, len(averages))
 
-        av = np.array(averages)
-        # sd = np.array(sds)
+        av = np.mean(averages, axis=1)
+        sd = np.std(averages, axis=1)
         tm = np.array(times)
 
-        ax.plot(tm, av, marker='o')
-        # plt.errorbar(tm, av, sd, marker='o')
+        # ax.plot(tm, av, marker='o')
+        plt.errorbar(tm, av, sd, marker='o')
 
     ax.set_title(f'Average firing rate of {pop_name} over trials')
     ax.legend(labels)
