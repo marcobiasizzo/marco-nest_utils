@@ -256,7 +256,7 @@ def plot_instant_fr_multiple(instant_fr_list, clms=2, t_start=0.):
                           t_start=t_start)
 
 
-def plot_fr_learning1(average_fr_per_trial, pop_names_list, pop_name, labels=None):
+def plot_fr_learning1(average_fr_per_trial, experiment, pop_name, labels=None):
     fig_width = 7.0
     plot_height = 5.0
 
@@ -275,7 +275,10 @@ def plot_fr_learning1(average_fr_per_trial, pop_names_list, pop_name, labels=Non
         # ax.plot(tm, av, marker='o')
         plt.errorbar(tm, av, sd, marker='o')
 
-    ax.set_title(f'Average firing rate of {pop_name} over trials')
+    ax.set_xlabel('Trial')
+    ax.set_ylabel('Average firing rate [sp/s]')
+
+    ax.set_title(f'Average firing rate of {pop_name} over trials, with {experiment}')
     ax.legend(labels)
     return fig, ax
 
