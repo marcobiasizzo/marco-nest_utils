@@ -114,10 +114,23 @@ def create_model_dictionary(N_neurons, pop_names, pop_ids, sim_time, sample_time
     return dic
 
 
-def calculate_fr_stats(raster_list, pop_dim_ids, t_start=0., t_end=None):
+def calculate_fr_stats(raster_list, pop_dim_ids, t_start=0., t_end=None, multiple_trials=False):
     """ Function to evaluate the firing rate and the
     coefficient of variation of the inter spike interval"""
-    fr_list, CV_list, name_list = calculate_fr(raster_list, pop_dim_ids, t_start, t_end, return_CV_name=True)
+    if not multiple_trials:     # the raster list corresponds to only 1 trial
+        fr_list, CV_list, name_list = calculate_fr(raster_list, pop_dim_ids, t_start, t_end, return_CV_name=True)
+    else:                       # raster_list is a list of list. Multiple trials are applied
+        fr_list_list = []
+        CV_list_list = []
+        name_list_list = []
+        for raster in raster_list:
+            fr_list, CV_list, name_list = calculate_fr(raster, pop_dim_ids, t_start, t_end, return_CV_name=True)
+            fr_list_list += [np.array(fr_list)]
+            CV_list_list += [np.array(CV_list)]
+        fr_list = np.array(fr_list_list).mean(axis=0)
+        fr_list_sd = np.array(fr_list_list).std(axis=0)
+        CV_list = np.array(CV_list_list).mean(axis=0)
+        CV_list_sd = np.array(CV_list_list).mean(axis=0)
 
     pop_list_dim = get_pop_dim_from_ids(name_list, pop_dim_ids)
     # expand with average values for GPe and MSN if there are
@@ -137,7 +150,10 @@ def calculate_fr_stats(raster_list, pop_dim_ids, t_start=0., t_end=None):
     #     CV_list = CV_list[0:3] + CV_list[3:5] + [average_GPe(CV_list)] + CV_list[5:7]
     #     name_list = name_list[0:3] + name_list[3:5] + ['GPe'] + name_list[5:7]
 
-    ret = {'fr': fr_list, 'CV': CV_list, 'name': name_list}
+    if not multiple_trials:
+        ret = {'fr': fr_list, 'CV': CV_list, 'name': name_list}
+    else:
+        ret = {'fr': fr_list, 'fr_sd': fr_list_sd, 'CV': CV_list, 'CV_sd': CV_list_sd, 'name': name_list}
     return ret
 
 
