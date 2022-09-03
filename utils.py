@@ -445,7 +445,8 @@ def average_fr_per_trial(rasters_list_list, pop_ids, t_start, t_end, settling_ti
     av_fr_list_list = []
     for k in range(trials):
         t0 = settling_time + t_end * k  # trial init
-        tf = t0 + t_start  # before IO spikes
+        tf = t0 + t_start              # before IO spikes
+        print(t0, tf)
 
         av_fr_list = []
         for rr in rasters_list_list:

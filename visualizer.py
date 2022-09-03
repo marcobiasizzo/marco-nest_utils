@@ -275,7 +275,7 @@ def plot_fr_learning1(average_fr_per_trial, experiment, pop_name, labels=None):
         # ax.plot(tm, av, marker='o')
         plt.errorbar(tm, av, sd, marker='o')
 
-    scale_xy_axes(ax, ylim=[43, 70])
+    # scale_xy_axes(ax, ylim=[43, 70])
 
     ax.set_xlabel('Trial')
     ax.set_ylabel('Average firing rate [sp/s]')
