@@ -275,6 +275,8 @@ def plot_fr_learning1(average_fr_per_trial, experiment, pop_name, labels=None):
         # ax.plot(tm, av, marker='o')
         plt.errorbar(tm, av, sd, marker='o')
 
+    scale_xy_axes(ax, ylim=[43, 70])
+
     ax.set_xlabel('Trial')
     ax.set_ylabel('Average firing rate [sp/s]')
 
@@ -732,7 +734,7 @@ def plot_fourier_transform(fr_array, T_sample, legend_labels, mean=None, sd=None
     return fig, ax
 
 
-def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, sd=None, t_start=0., y_range=None):
+def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, sd=None, t_start=0., y_range=None, dopa_depl=None):
     """ Plot the discrete fourier transform of the mass models """
     fig_width = 6.
     plot_height = 4.
@@ -741,27 +743,32 @@ def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, 
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"][1:]  # don't use blue color as in Cereb
     ax.set_prop_cycle(color=colors)
 
-    T = T_sample / 10.
-    sel_mass_times = mass_models_sol["mass_frs_times"] > t_start
-    y = mass_models_sol["mass_frs"][sel_mass_times, :]  # calculate tf after the t_start
+    if not isinstance(mass_models_sol, list):
+        mass_models_sol = [mass_models_sol]
 
-    T = T_sample    # resample to 1 ms
-    y = y[::10]     # select one time sample every 10
+    T = mass_models_sol[0]["mass_frs_times"][1] - mass_models_sol[0]["mass_frs_times"][0]
+    sel_mass_times1 = mass_models_sol[0]["mass_frs_times"] > t_start
+    sel_mass_times2 = mass_models_sol[0]["mass_frs_times"] % T_sample == 0
+    y_list = [mms["mass_frs"][np.logical_and(sel_mass_times1, sel_mass_times2), :] for mms in mass_models_sol]  # calculate tf after the t_start
 
-    fs = 1000./T    # [Hz], sampling time
+    # T = T_sample    # resample to 1 ms
+    # y = y[::10]     # select one time sample every 10
+
+    fs = 1000./T_sample    # [Hz], sampling time
     w = 15.         # [adim], "omega0", in the definition of Morlet wavelet: pi**-0.25 * exp(1j*w*x) * exp(-0.5*(x**2))
     freq = np.linspace(1, fs / 2, 2*int(fs/2-1)+1)      # frequency range, until half fs
     widths = w * fs / (2 * freq * np.pi)    # [adim] reduce time widths for higher frequencies. Widhts / sample_freq = time
 
-    y_plot = np.zeros((len(freq), y.shape[1]))
-    for idx in range(y.shape[1]):
-        cwtm = signal.cwt(y[:, idx], signal.morlet2, widths, w=w)
-        y_plot[:, idx] = np.abs(cwtm).sum(axis=1)
+    y_plot_list = [np.zeros((len(freq), y.shape[1])) for y in y_list]
+    for y, y_plot in zip(y_list, y_plot_list):
+        for idx in range(y.shape[1]):
+            cwtm = signal.cwt(y[:, idx], signal.morlet2, widths, w=w)
+            y_plot[:, idx] = np.abs(cwtm).sum(axis=1)
 
     wavelet_idx = utils.calculate_fourier_idx(freq, [1, 60])
     # print(f'In plot: considering frequencies in the range {[freq[wavelet_idx[0]], freq[wavelet_idx[1]-1]]}')
 
-    y_val = y_plot[wavelet_idx[0]:wavelet_idx[1], :]
+    y_val_list = [y_plot[wavelet_idx[0]:wavelet_idx[1], :] for y_plot in y_plot_list]
 
     fm_list = []
     ax.set_prop_cycle(color=colors)
@@ -770,25 +777,37 @@ def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, 
     if mean is not None:
         ax.axvspan(mean - sd, mean + sd, alpha=0.5, color='tab:blue')
 
-    diff = np.zeros(y_val.shape)
-    for idx in range(len(y_val[0, :])):
-        fm = FOOOF(peak_width_limits=peak_width_limits[idx])  # aperiodic_mode='knee')
-        fm.fit(freq[wavelet_idx[0]:wavelet_idx[1]], y_val[:, idx])
-        # diff[:, idx] = np.log10(y_val[:, idx]) - np.log10(1/freq[wavelet_idx[0]:wavelet_idx[1]]**fm.aperiodic_params_[1]) - fm.aperiodic_params_[0]
-        diff[:, idx] = fm.fooofed_spectrum_ - np.log10(1/freq[wavelet_idx[0]:wavelet_idx[1]]**fm.aperiodic_params_[1]) - fm.aperiodic_params_[0]
-        ax.plot(freq[wavelet_idx[0]:wavelet_idx[1]], diff[:, idx], label=legend_labels[idx])
-        fm_list += [fm]
-        # fm.report(freq[wavelet_idx[0]:wavelet_idx[1]], y_val[:, idx], [1, 60])
+    diff_list = [np.zeros(y_val.shape) for y_val in y_val_list]
+    fm_list_list = []
+    for y_val, diff in zip(y_val_list, diff_list):
+        fm_list = []
+        for idx in range(len(y_val[0, :])):
+            fm = FOOOF(peak_width_limits=peak_width_limits[idx])  # aperiodic_mode='knee')
+            fm.fit(freq[wavelet_idx[0]:wavelet_idx[1]], y_val[:, idx])
+            fm_list += [fm]
+            # diff[:, idx] = np.log10(y_val[:, idx]) - np.log10(1/freq[wavelet_idx[0]:wavelet_idx[1]]**fm.aperiodic_params_[1]) - fm.aperiodic_params_[0]
+            diff[:, idx] = fm.fooofed_spectrum_ - np.log10(1/freq[wavelet_idx[0]:wavelet_idx[1]]**fm.aperiodic_params_[1]) - fm.aperiodic_params_[0]
+        fm_list_list += [fm_list]
+
+    diff_array = np.array(diff_list)
+    diff_mean = diff_array.mean(axis=0)
+    diff_std = diff_array.std(axis=0)
+    for idx in range(diff_mean.shape[1]):
+        ax.fill_between(freq[wavelet_idx[0]:wavelet_idx[1]], diff_mean[:, idx] - diff_std[:, idx], diff_mean[:, idx] + diff_std[:, idx], alpha=0.5)
+        ax.plot(freq[wavelet_idx[0]:wavelet_idx[1]], diff_mean[:, idx], label=legend_labels[idx])
+
+    # fm.report(freq[wavelet_idx[0]:wavelet_idx[1]], y_val[:, idx], [1, 60])
 
     # if mean is not None:
     #     ax.axvspan(mean - sd, mean + sd, alpha=0.5, color='tab:blue')
     #
     # ax.set_prop_cycle(color=colors)
-    # for idx in range(len(y_val[0, :])):
-    #     ax.plot(freq[wavelet_idx[0]:wavelet_idx[1]], np.log10(y_val[:, idx]), alpha=.5, label=legend_labels[idx])
+    # for idx in range(len(y_val_list[0][0, :])):
+    #     ax.plot(freq[wavelet_idx[0]:wavelet_idx[1]], np.log10(np.array(y_val_list).mean(axis=0)[:, idx]), alpha=.5, label=legend_labels[idx])
     #
-    # ax.plot(freq[wavelet_idx[0]:wavelet_idx[1]], fm_list[idx].fooofed_spectrum_, '-.', c='tab:grey', label='fooof interp') # , label=f'{legend_labels[idx]} fooof')
-    #
+    #     fooofed = [fm_list_list[k][idx].fooofed_spectrum_ for k in range(len(mass_models_sol))]
+    #     ax.plot(freq[wavelet_idx[0]:wavelet_idx[1]], np.array(fooofed).mean(axis=0), '-.', c='tab:grey', label='fooof interp') # , label=f'{legend_labels[idx]} fooof')
+
     # ax.set_prop_cycle(color=colors)
     # for idx in range(len(y_val[0, :])):
     #     ax.plot(freq[wavelet_idx[0]:wavelet_idx[1]], fm_list[idx].fooofed_spectrum_, '-.') # , label=f'{legend_labels[idx]} fooof')
@@ -805,7 +824,7 @@ def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, 
     ax.set_ylabel(f'Log Power [Activity^2]')
 
     ax.legend(fontsize=12) # loc='center left', bbox_to_anchor=(1, 0.5), fontsize=16)
-    ax.set_title('Wavelet transform with dopa. depl. = -0.4')
+    ax.set_title(f'Wavelet transform with dopa. depl. = {dopa_depl}')
 
     for item in [ax.title, ax.xaxis.label, ax.yaxis.label]:
         item.set_fontsize(12)
@@ -815,7 +834,7 @@ def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, 
     fig.tight_layout()
 
 
-    return fig, ax, diff
+    return fig, ax, diff_mean
 
 
 def plot_wavelet_transform_and_mass(mass_models_sol, T_sample, legend_labels, mean=None, sd=None, t_start=0., t_end=0., y_range=None):
