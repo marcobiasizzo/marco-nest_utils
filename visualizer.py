@@ -819,7 +819,7 @@ def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, 
     #     ax.plot(freq[wavelet_idx[0]:wavelet_idx[1]], np.log10(1/freq[wavelet_idx[0]:wavelet_idx[1]]**fm_list[idx].aperiodic_params_[1]) + fm_list[idx].aperiodic_params_[0], ':') # , label=f'{legend_labels[idx]} aperiodic')
 
     ax.grid(linestyle='-.')
-    scale_xy_axes(ax, ylim=[-0.0, 0.5])
+    scale_xy_axes(ax, ylim=[-0.0, 1.1])
     ax.set_xlabel('Frequency [Hz]')
     ax.set_ylabel(f'Log Power [Activity^2]')
 
