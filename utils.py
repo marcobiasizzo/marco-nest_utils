@@ -201,10 +201,12 @@ def calculate_fr(raster_list, pop_dim_ids, t_start=0., t_end=None, return_CV_nam
         return fr_list
 
 
-def fr_window_step(raster_list, pop_dim_ids, sim_time, window, step):
+def fr_window_step(raster_list, pop_dim_ids, sim_time, window, step, start_time):
     '''
     calculate punctual fr per neuron
     sim_time, window, step in [ms]
+
+    in start_time will be centered the first window
     '''
 
     ret_list = []
@@ -215,13 +217,13 @@ def fr_window_step(raster_list, pop_dim_ids, sim_time, window, step):
         i = raster['neurons_idx'] - pop_dim_ids[pop_name][0]
         pop_dim = pop_dim_ids[pop_name][1] - pop_dim_ids[pop_name][0] + 1
 
-        elem_len = int((sim_time - window) / step) + 1
+        elem_len = int((sim_time - start_time) / step) + 1
         firing = np.zeros((pop_dim, elem_len))
 
         for index, time in zip(i, t):
-            last_window_index = int(time / step)  # index in the array for the last window containing the firing
-            dt = time - (last_window_index * step)  # time from t and the beginning of the last window
-            how_many_wind_before = int((window - dt) / step)  # how many windows before contain the firing
+            last_window_index = int((time-start_time + window/2.) / step)   # index in the array for the last window containing the firing
+            dt = time - (start_time + last_window_index * step - window/2.)   # time from t and the beginning of the last window
+            how_many_wind_before = int((window - dt) / step)    # how many windows before contain the firing
             for j in range(how_many_wind_before + 1):
                 elem = last_window_index - j
                 if 0 <= elem < elem_len: # if spike at the last ms, do not count following "out" window
@@ -230,7 +232,7 @@ def fr_window_step(raster_list, pop_dim_ids, sim_time, window, step):
         # print(firing[0,:])
         fr = firing / (window / 1000.0)
 
-        central_windows_time = np.linspace(window/2., sim_time-window/2., elem_len)
+        central_windows_time = np.linspace(start_time, start_time+step*(elem_len-1), elem_len)
 
         ret = {'times': central_windows_time, 'instant_fr': fr, 'name': pop_name}
 
@@ -441,17 +443,18 @@ def get_cortex_activity(dopa_depl, sim_time, sim_period):
     return extended_ctx_frs
 
 
-def average_fr_per_trial(rasters_list_list, pop_ids, t_start, t_end, settling_time, trials):
+def average_fr_per_trial(rasters_list_list, pop_ids, t_sim, t_start, t_end, settling_time, trials):
     av_fr_list_list = []
     for k in range(trials):
-        t0 = settling_time + t_end * k  # trial init
-        tf = t0 + t_start              # before IO spikes
-        print(t0, tf)
+        t0 = settling_time + t_sim * k  # trial init
+        ti = t0 + t_start           # trial init
+        tf = t0 + t_end             # before IO spikes
+        print(ti, tf)
 
         av_fr_list = []
         for rr in rasters_list_list:
             # note that the previous stimulation may effect the first instants of the following one
-            av_fr = calculate_fr_stats(rr, pop_ids, t_start=t0, t_end=tf)
+            av_fr = calculate_fr_stats(rr, pop_ids, t_start=ti, t_end=tf)
             av_fr_list += [av_fr['fr']]
 
         av_fr_list_list += [av_fr_list]

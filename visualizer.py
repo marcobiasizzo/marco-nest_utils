@@ -6,6 +6,8 @@ from marco_nest_utils import utils
 from fooof import FOOOF
 import pickle
 from math import ceil
+from scipy.ndimage import gaussian_filter
+
 
 ''' Plot membrane potential '''
 
@@ -86,7 +88,7 @@ def raster_plot(times, neurons_idx, compartment_name, ax_plt=None, start_stop_ti
                 ax.scatter(times[neg_idxs], neurons_idx[neg_idxs], c='tab:orange', s=4)
                 ax.scatter(times[pos_idxs], neurons_idx[pos_idxs], c='tab:blue', s=4)
         # print(times)
-        elif compartment_name == 'dcn':
+        elif compartment_name == 'dcn old':
             neg_idxs = [n in [96735, 96736, 96737, 96741, 96742, 96743] for n in neurons_idx]
             ax.scatter(times[neg_idxs], neurons_idx[neg_idxs], c='tab:orange', s=4)
             pos_idxs = [n in [96732, 96733, 96734, 96738, 96739, 96740] for n in neurons_idx]
@@ -236,6 +238,7 @@ def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0.
         ax = ax_plt
 
     pop_instant_fr = instant_fr.sum(axis=0) / 1000.     # every [ms]
+    pop_instant_fr = gaussian_filter(pop_instant_fr, 4)
 
     ax.plot(times, pop_instant_fr, label=f'{compartment_name} potential', color='tab:blue')
     # ax.axvline(x=t_start, color='tab:red')
@@ -243,6 +246,12 @@ def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0.
     ax.set_ylabel(f'{compartment_name} a.f.r. [sp./ms]')  # Add a y-label to the axes.
     # ax.set_title(f"{compartment_name} potential")  # Add a title to the axes.
     # ax.legend()  # Add a legend.
+    for tr in range(6):
+        t0 = 500 + tr * 1260.
+        ti = t0 + 500
+        te = t0 + 760
+        ax.axvspan(ti, te, alpha=0.3, color='red')
+
     if ax_plt is None:
         res = fig, ax
     else:
@@ -734,7 +743,8 @@ def plot_fourier_transform(fr_array, T_sample, legend_labels, mean=None, sd=None
     return fig, ax
 
 
-def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, sd=None, t_start=0., y_range=None, dopa_depl=None):
+def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, sd=None, t_start=0., y_range=None, dopa_depl=None,
+                           times_key='mass_frs_times', data_key="mass_frs"):
     """ Plot the discrete fourier transform of the mass models """
     fig_width = 6.
     plot_height = 4.
@@ -746,10 +756,10 @@ def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, 
     if not isinstance(mass_models_sol, list):
         mass_models_sol = [mass_models_sol]
 
-    T = mass_models_sol[0]["mass_frs_times"][1] - mass_models_sol[0]["mass_frs_times"][0]
-    sel_mass_times1 = mass_models_sol[0]["mass_frs_times"] > t_start
-    sel_mass_times2 = mass_models_sol[0]["mass_frs_times"] % T_sample == 0
-    y_list = [mms["mass_frs"][np.logical_and(sel_mass_times1, sel_mass_times2), :] for mms in mass_models_sol]  # calculate tf after the t_start
+    T = mass_models_sol[0][times_key][1] - mass_models_sol[0][times_key][0]
+    sel_mass_times1 = mass_models_sol[0][times_key] > t_start
+    sel_mass_times2 = mass_models_sol[0][times_key] % T_sample == 0
+    y_list = [mms[data_key][np.logical_and(sel_mass_times1, sel_mass_times2), :] for mms in mass_models_sol]  # calculate tf after the t_start
 
     # T = T_sample    # resample to 1 ms
     # y = y[::10]     # select one time sample every 10
@@ -772,7 +782,8 @@ def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, 
 
     fm_list = []
     ax.set_prop_cycle(color=colors)
-    peak_width_limits = [[2, 8], [2, 8], [3, 20]]
+    # peak_width_limits = [[2, 8], [2, 8], [3, 20]]
+    peak_width_limits = [[2, 8], [2, 8], [2, 8]]
 
     if mean is not None:
         ax.axvspan(mean - sd, mean + sd, alpha=0.5, color='tab:blue')
