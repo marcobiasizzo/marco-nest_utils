@@ -231,7 +231,7 @@ def plot_my_histogram(ax, width, value_list, name_list, target_list, y_label):
 
     ax.tick_params(bottom=False)
 
-def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0.):
+def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0., trials=1):
     if ax_plt is None:
         fig, ax = plt.subplots()  # create a new figure
     else:
@@ -246,7 +246,7 @@ def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0.
     ax.set_ylabel(f'{compartment_name} a.f.r. [sp./ms]')  # Add a y-label to the axes.
     # ax.set_title(f"{compartment_name} potential")  # Add a title to the axes.
     # ax.legend()  # Add a legend.
-    for tr in range(6):
+    for tr in range(trials):
         t0 = 500 + tr * 1260.
         ti = t0 + 500
         te = t0 + 760
@@ -259,10 +259,10 @@ def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0.
     return res
 
 
-def plot_instant_fr_multiple(instant_fr_list, clms=2, t_start=0.):
+def plot_instant_fr_multiple(instant_fr_list, clms=2, t_start=0., trials=1):
     keywords = {'x_data': 'times', 'y_data': 'instant_fr', 'name': 'name'}
     return multiple_plots(instant_fr_list, plot_instant_fr, keywords, clms=clms,
-                          t_start=t_start)
+                          t_start=t_start, trials=trials)
 
 
 def plot_fr_learning1(average_fr_per_trial, experiment, pop_name, labels=None):
