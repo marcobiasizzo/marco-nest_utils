@@ -7,6 +7,8 @@ from fooof import FOOOF
 import pickle
 from math import ceil
 from scipy.ndimage import gaussian_filter
+from mpl_toolkits import mplot3d
+
 
 
 ''' Plot membrane potential '''
@@ -1312,4 +1314,18 @@ def simple_plot(x, y, title=None, legend=None, ax_labels=None):
     fig.show()
 
 
+def fr_plot_3D(times, instant_fr, sim_time, trials, compartment_name):
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
 
+    for k in range(trials):
+        t_in = sim_time * k
+        t_f = t_in + sim_time
+
+        b1 = times > t_in
+        b2 = times <= t_f
+        in_fr = instant_fr[np.logical_and(b2, b1)]
+
+        ax.plot3D(times[times < sim_time], k * np.ones(len(in_fr)), in_fr, 'gray')
+
+    return fig, ax
