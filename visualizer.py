@@ -240,7 +240,7 @@ def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0.
         ax = ax_plt
 
     pop_instant_fr = instant_fr.sum(axis=0) / 1000.     # every [ms]
-    pop_instant_fr = gaussian_filter(pop_instant_fr, 4)
+    pop_instant_fr = gaussian_filter(pop_instant_fr, 10)    # sim time should be of 5 ms
 
     ax.plot(times, pop_instant_fr, label=f'{compartment_name} potential', color='tab:blue')
     # ax.axvline(x=t_start, color='tab:red')
