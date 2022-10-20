@@ -6,6 +6,7 @@ from scipy.fft import fft, fftfreq
 from marco_nest_utils import visualizer as vsl
 from pathlib import Path
 import pickle
+from scipy.ndimage import gaussian_filter
 
 
 def attach_voltmeter(nest, pop_list, sampling_resolution=1.0, target_neurons='all'):
@@ -464,3 +465,108 @@ def average_fr_per_trial(rasters_list_list, pop_ids, t_sim, t_start, t_end, sett
         av_fr_dic[name] = [[fr[i] for fr in av_fr_list] for av_fr_list in av_fr_list_list]
 
     return av_fr_dic
+
+
+def calculate_threshold(instant_fr, trials, settling_time, sim_time, MF_time, IO_time, m1, q, m2, ax=None):
+    times = instant_fr[2]['times']
+    instf = instant_fr[2]['instant_fr'].mean(axis=0)
+    instf = gaussian_filter(instf, 2)    # sim time should be of 5 ms
+    logical_res = []
+    reaction_times = []
+    for k in range(trials):
+        # threshold
+        t0 = settling_time + k * sim_time
+        tf1 = settling_time + k * sim_time + MF_time + 150
+        t_ref = settling_time + k * sim_time + MF_time + 150
+        tf2 = settling_time + k * sim_time + IO_time
+        b1 = times > t0
+        b2 = times <= tf1
+        in_fr1 = instf[np.logical_and(b2, b1)]      # baseline times
+
+        baseline = in_fr1.mean()
+        threshold = baseline * m1 + q
+
+        if ax is not None:
+            ax.plot([t0, t0 + sim_time], [threshold, threshold], c='tab:green')
+
+        b1 = times > t_ref
+        b2 = times <= tf2
+        in_fr2 = instf[np.logical_and(b2, b1)]
+
+        diff1 = threshold - in_fr2
+        # if np.any(diff1 < 0.):
+        #     logical_res += [True]
+        # else:
+        #     logical_res += [False]
+
+        # cumulative
+        t0 = settling_time + k * sim_time
+        tf1 = settling_time + k * sim_time + IO_time
+        t_ref = settling_time + k * sim_time + MF_time + 150
+        tf2 = settling_time + k * sim_time + IO_time
+        b1 = times > t0
+        b2 = times <= tf1
+        in_fr1 = instf[np.logical_and(b2, b1)]
+
+        # cum_mean = np.cumsum(in_fr1) / np.cumsum(np.ones(len(in_fr1))) * m2
+        derivative = np.diff(in_fr1)
+
+        # if ax is not None:
+            # ax.plot(times[np.logical_and(b2, b1)], cum_mean, c='tab:orange')
+            # ax.plot(times[np.logical_and(b2, b1)][1:], derivative, c='tab:orange')
+
+        b1 = times > t_ref
+        b2 = times <= tf2
+        in_fr2 = instf[np.logical_and(b2, b1)]
+
+        # diff2 = cum_mean[-len(in_fr2):] - in_fr2
+        # if np.any(diff2 < 0.):
+        #     logical_res += [True]
+        # else:
+        #     logical_res += [False]
+
+        # CR = np.logical_and(diff1 < 0., diff2 < 0.)
+        CR = np.logical_and(diff1 < 0., derivative[-len(diff1):] > 1.2)
+
+        if np.any(CR):
+            for tt, cr in zip(times[np.logical_and(b2, b1)], CR):
+                if cr == True:
+                    reaction_times += [tt - (settling_time + k * sim_time + MF_time)]
+                    break
+            logical_res += [True]
+        else:
+            reaction_times += [-1]
+            logical_res += [False]
+
+    return threshold, logical_res, reaction_times
+
+
+def calculate_cum_mean(instant_fr, trials, settling_time, sim_time, MF_time, IO_time, m, ax=None):
+    times = instant_fr[2]['times']
+    instf = instant_fr[2]['instant_fr'].mean(axis=0)
+    logical_res = []
+    for k in range(trials):
+        t0 = settling_time + k * sim_time
+        tf1 = settling_time + k * sim_time + IO_time
+        t_ref = settling_time + k * sim_time + MF_time + 150
+        tf2 = settling_time + k * sim_time + IO_time
+        b1 = times > t0
+        b2 = times <= tf1
+        in_fr1 = instf[np.logical_and(b2, b1)]      # baseline times
+
+        cum_mean = np.cumsum(in_fr1) / np.cumsum(np.ones(len(in_fr1))) * m
+
+        # if ax is not None:
+        #     ax.plot(times[np.logical_and(b2, b1)], cum_mean, c='tab:orange')
+
+        b1 = times > t_ref
+        b2 = times <= tf2
+        in_fr2 = instf[np.logical_and(b2, b1)]
+
+        diff = cum_mean[-len(in_fr2):] - in_fr2
+        if np.any(diff < 0.):
+            logical_res += [True]
+        else:
+            logical_res += [False]
+
+    return cum_mean, logical_res

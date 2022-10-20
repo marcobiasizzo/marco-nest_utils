@@ -109,7 +109,6 @@ def raster_plot(times, neurons_idx, compartment_name, ax_plt=None, start_stop_ti
                     occr = mylist.count(key)
                     occ += [occr]
                 # print(compartment_name, len(mylist), mylist)
-                print(occ)
         max_idx = max(neurons_idx)
         min_idx = min(neurons_idx)
         if max_idx - min_idx >= 4:
@@ -233,14 +232,14 @@ def plot_my_histogram(ax, width, value_list, name_list, target_list, y_label):
 
     ax.tick_params(bottom=False)
 
-def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0., trials=1):
+def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0., trials=1, time_range=None):
     if ax_plt is None:
         fig, ax = plt.subplots()  # create a new figure
     else:
         ax = ax_plt
 
-    pop_instant_fr = instant_fr.sum(axis=0) / 1000.     # every [ms]
-    pop_instant_fr = gaussian_filter(pop_instant_fr, 10)    # sim time should be of 5 ms
+    pop_instant_fr = instant_fr.mean(axis=0)     # every [ms]
+    pop_instant_fr = gaussian_filter(pop_instant_fr, 2)    # sim time should be of 5 ms
 
     ax.plot(times, pop_instant_fr, label=f'{compartment_name} potential', color='tab:blue')
     # ax.axvline(x=t_start, color='tab:red')
@@ -254,6 +253,9 @@ def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0.
         te = t0 + 760
         ax.axvspan(ti, te, alpha=0.3, color='red')
 
+    if time_range is not None:
+        ax.set_xlim(time_range)
+
     if ax_plt is None:
         res = fig, ax
     else:
@@ -261,10 +263,10 @@ def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0.
     return res
 
 
-def plot_instant_fr_multiple(instant_fr_list, clms=2, t_start=0., trials=1):
+def plot_instant_fr_multiple(instant_fr_list, clms=2, t_start=0., trials=1, time_range=None):
     keywords = {'x_data': 'times', 'y_data': 'instant_fr', 'name': 'name'}
     return multiple_plots(instant_fr_list, plot_instant_fr, keywords, clms=clms,
-                          t_start=t_start, trials=trials)
+                          t_start=t_start, trials=trials, time_range=time_range)
 
 
 def plot_fr_learning1(average_fr_per_trial, experiment, pop_name, labels=None):
