@@ -508,25 +508,25 @@ def calculate_threshold(instant_fr, trials, settling_time, sim_time, MF_time, IO
         b2 = times <= tf1
         in_fr1 = instf[np.logical_and(b2, b1)]
 
-        # cum_mean = np.cumsum(in_fr1) / np.cumsum(np.ones(len(in_fr1))) * m2
-        derivative = np.diff(in_fr1)
+        cum_mean = np.cumsum(in_fr1) / np.cumsum(np.ones(len(in_fr1))) * m2
+        # derivative = np.diff(in_fr1)
 
-        # if ax is not None:
-            # ax.plot(times[np.logical_and(b2, b1)], cum_mean, c='tab:orange')
+        if ax is not None:
+            ax.plot(times[np.logical_and(b2, b1)], cum_mean, c='tab:orange')
             # ax.plot(times[np.logical_and(b2, b1)][1:], derivative, c='tab:orange')
 
         b1 = times > t_ref
         b2 = times <= tf2
         in_fr2 = instf[np.logical_and(b2, b1)]
 
-        # diff2 = cum_mean[-len(in_fr2):] - in_fr2
+        diff2 = cum_mean[-len(in_fr2):] - in_fr2
         # if np.any(diff2 < 0.):
         #     logical_res += [True]
         # else:
         #     logical_res += [False]
 
-        # CR = np.logical_and(diff1 < 0., diff2 < 0.)
-        CR = np.logical_and(diff1 < 0., derivative[-len(diff1):] > 1.2)
+        CR = np.logical_and(diff1 < 0., diff2 < 0.)
+        # CR = np.logical_and(diff1 < 0., derivative[-len(diff1):] > 1.2)
 
         if np.any(CR):
             for tt, cr in zip(times[np.logical_and(b2, b1)], CR):
