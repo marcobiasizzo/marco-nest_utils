@@ -239,7 +239,7 @@ def plot_instant_fr(times, instant_fr, compartment_name, ax_plt=None, t_start=0.
         ax = ax_plt
 
     pop_instant_fr = instant_fr.mean(axis=0)     # every [ms]
-    pop_instant_fr = gaussian_filter(pop_instant_fr, 2)    # sim time should be of 5 ms
+    pop_instant_fr = gaussian_filter(pop_instant_fr, 4)    # sim time should be of 5 ms
 
     ax.plot(times, pop_instant_fr, label=f'{compartment_name} potential', color='tab:blue')
     # ax.axvline(x=t_start, color='tab:red')
@@ -770,7 +770,7 @@ def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, 
 
     fs = 1000./T_sample    # [Hz], sampling time
     w = 15.         # [adim], "omega0", in the definition of Morlet wavelet: pi**-0.25 * exp(1j*w*x) * exp(-0.5*(x**2))
-    freq = np.linspace(1, fs / 2, 2*int(fs/2-1)+1)      # frequency range, until half fs
+    freq = np.linspace(1, fs / 2, 2*int(fs/2-1)-1)      # frequency range, until half fs
     widths = w * fs / (2 * freq * np.pi)    # [adim] reduce time widths for higher frequencies. Widhts / sample_freq = time
 
     y_plot_list = [np.zeros((len(freq), y.shape[1])) for y in y_list]
@@ -786,7 +786,7 @@ def plot_wavelet_transform(mass_models_sol, T_sample, legend_labels, mean=None, 
 
     fm_list = []
     ax.set_prop_cycle(color=colors)
-    # peak_width_limits = [[2, 8], [2, 8], [3, 20]]
+    # peak_width_limits = [[1, 8], [1, 8], [1, 8]]
     peak_width_limits = [[2, 8], [2, 8], [2, 8]]
 
     if mean is not None:
@@ -1329,5 +1329,28 @@ def fr_plot_3D(times, instant_fr, sim_time, trials, compartment_name):
         in_fr = instant_fr[np.logical_and(b2, b1)]
 
         ax.plot3D(times[times < sim_time], k * np.ones(len(in_fr)), in_fr, 'gray')
+
+    return fig, ax
+
+
+def reaction_times_plot(reaction_times):
+    fig, ax = plt.subplots(figsize=(6, 3))
+    for tt, k in zip(reaction_times, range(len(reaction_times))):
+        k = k+1
+        if tt == -1:
+            # ax.scatter(k, 200, c='tab:red', marker='x')
+            ax.axvspan(k - 0.5, k + 0.5, alpha=0.3, color='tab:red')
+        else:
+            ax.scatter(k, tt, c='tab:green')
+            ax.axvspan(k - 0.5, k + 0.5, alpha=0.3, color='tab:green')
+
+    ax.set_title('Reaction times')
+
+    ax.set_xlabel('Trial')
+    ax.set_ylabel('Time from CS [ms]')
+
+    ax.set_xlim(0.5, 50.5)
+
+    fig.tight_layout()
 
     return fig, ax

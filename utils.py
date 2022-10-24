@@ -470,14 +470,14 @@ def average_fr_per_trial(rasters_list_list, pop_ids, t_sim, t_start, t_end, sett
 def calculate_threshold(instant_fr, trials, settling_time, sim_time, MF_time, IO_time, m1, q, m2, ax=None):
     times = instant_fr[2]['times']
     instf = instant_fr[2]['instant_fr'].mean(axis=0)
-    instf = gaussian_filter(instf, 2)    # sim time should be of 5 ms
+    instf = gaussian_filter(instf, 4)    # sim time should be of 5 ms
     logical_res = []
     reaction_times = []
     for k in range(trials):
         # threshold
         t0 = settling_time + k * sim_time
-        tf1 = settling_time + k * sim_time + MF_time + 150
-        t_ref = settling_time + k * sim_time + MF_time + 150
+        tf1 = settling_time + k * sim_time + MF_time + 100
+        t_ref = settling_time + k * sim_time + MF_time + 100
         tf2 = settling_time + k * sim_time + IO_time
         b1 = times > t0
         b2 = times <= tf1
@@ -502,7 +502,7 @@ def calculate_threshold(instant_fr, trials, settling_time, sim_time, MF_time, IO
         # cumulative
         t0 = settling_time + k * sim_time
         tf1 = settling_time + k * sim_time + IO_time
-        t_ref = settling_time + k * sim_time + MF_time + 150
+        t_ref = settling_time + k * sim_time + MF_time + 100
         tf2 = settling_time + k * sim_time + IO_time
         b1 = times > t0
         b2 = times <= tf1
