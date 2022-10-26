@@ -4,11 +4,7 @@ from scipy.fft import fft, fftfreq
 from scipy import signal
 from marco_nest_utils import utils
 from fooof import FOOOF
-import pickle
-from math import ceil
 from scipy.ndimage import gaussian_filter
-from mpl_toolkits import mplot3d
-
 
 
 ''' Plot membrane potential '''
