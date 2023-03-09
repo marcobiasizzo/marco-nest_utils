@@ -651,7 +651,7 @@ def plot_fourier_transform(fr_array, T_sample, legend_labels, mean=None, sd=None
         ax.axvspan(mean - sd, mean + sd, alpha=0.5, color='tab:blue')
 
     ax.grid(linestyle='-.')
-    scale_xy_axes(ax, ylim=[0., 0.58])
+    # scale_xy_axes(ax, ylim=[0., 0.9])
     ax.set_xlabel('Frequency [Hz]')
     ax.set_ylabel(f'Log Power [Activity^2]')
 
@@ -731,7 +731,7 @@ def plot_fourier_transform(fr_array, T_sample, legend_labels, mean=None, sd=None
     #             fm_list[idx].aperiodic_params_[0], ':')  # , label=f'{legend_labels[idx]} aperiodic')
 
     ax.grid(linestyle='-.')
-    scale_xy_axes(ax, ylim=[0., 0.58])
+    # scale_xy_axes(ax, ylim=[0., 0.58])
     ax.set_xlabel('Frequency [Hz]')
     # ax.set_ylabel(f'Log Power [Activity^2]')
 
