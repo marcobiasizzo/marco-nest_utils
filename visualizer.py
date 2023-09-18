@@ -5,9 +5,18 @@ from scipy import signal
 from marco_nest_utils import utils
 from fooof import FOOOF
 from scipy.ndimage import gaussian_filter
+import seaborn as sns
 
+
+import pickle as p
+import matplotlib.pyplot as plt
+import numpy as np
+import math
 
 ''' Plot membrane potential '''
+iter = 101
+palette = list(reversed(sns.color_palette("viridis", iter).as_hex()))
+sm = plt.cm.ScalarMappable(cmap="viridis_r", norm=plt.Normalize(vmin=0, vmax=iter))
 
 
 def plot_potential(times, potentials, compartment_name, ax_plt=None, time_sorting=True, t_start=0.):
@@ -222,7 +231,7 @@ def plot_my_histogram(ax, width, value_list, name_list, target_list, y_label):
     else:
         ax.set_ylim(0, np.max(value_list) * 1.4)
 
-    ax.legend(loc='upper left')   # , bbox_to_anchor=(0.14, 1.0))
+    ax.legend(loc='upper right')   # , bbox_to_anchor=(0.14, 1.0))
 
     ax.set_ylabel(y_label)
 
@@ -642,7 +651,7 @@ def plot_fourier_transform(fr_array, T_sample, legend_labels, mean=None, sd=None
         ax.axvspan(mean - sd, mean + sd, alpha=0.5, color='tab:blue')
 
     ax.grid(linestyle='-.')
-    scale_xy_axes(ax, ylim=[0., 0.58])
+    # scale_xy_axes(ax, ylim=[0., 0.9])
     ax.set_xlabel('Frequency [Hz]')
     ax.set_ylabel(f'Log Power [Activity^2]')
 
@@ -722,7 +731,7 @@ def plot_fourier_transform(fr_array, T_sample, legend_labels, mean=None, sd=None
     #             fm_list[idx].aperiodic_params_[0], ':')  # , label=f'{legend_labels[idx]} aperiodic')
 
     ax.grid(linestyle='-.')
-    scale_xy_axes(ax, ylim=[0., 0.58])
+    # scale_xy_axes(ax, ylim=[0., 0.58])
     ax.set_xlabel('Frequency [Hz]')
     # ax.set_ylabel(f'Log Power [Activity^2]')
 
@@ -1350,3 +1359,286 @@ def reaction_times_plot(reaction_times):
     fig.tight_layout()
 
     return fig, ax
+
+
+
+
+def sdf(cell, trial, rster,trials_start,burst_dur):
+    for i in range(len(rster)):
+        if rster[i]["compartment_name"] == cell:
+            pass
+            ids = rster[i]["neurons_idx"].reshape(-1,1)
+            times = rster[i]["times"].reshape(-1,1)
+            spk = np.concatenate((ids, times), axis=1)
+
+    if cell == 'dcn':
+        g_size = 10
+    else:
+        g_size = 20
+
+    if cell=="glomerulus":
+        neurons = np.unique(spk[:,0])[:200]
+    else:
+        neurons = np.unique(spk[:,0])
+
+    spk_first = spk[(spk[:,1]>=trials_start[trial]-50) & (spk[:,1]<trials_start[trial]+burst_dur+50)]
+    spk_first[:,1] -= trials_start[trial]-50
+    dur = burst_dur+100
+
+    sdf_full = np.empty([len(neurons),int(dur)])
+    sdf = []
+    for neu in range(len(neurons)):
+        spike_times_first = spk_first[spk_first[:,0]==neurons[neu],1]
+        for t in range(int(dur)):
+            tau_first = t-spike_times_first
+            sdf_full[neu,t] = sum(1/(math.sqrt(2*math.pi)*g_size)*np.exp(-np.power(tau_first,2)/(2*(g_size**2))))*(10**3)
+
+        sdf.append(sdf_full[neu])#[50:330])
+
+    return(sdf)
+
+def sdf_baseline( cell, rster,trials_start,burst_dur, between_start):
+    for i in range(len(rster)):
+        if rster[i]["compartment_name"] == cell:
+            pass
+            ids = rster[i]["neurons_idx"].reshape(-1,1)
+            times = rster[i]["times"].reshape(-1,1)
+            spk = np.concatenate((ids, times), axis=1)
+
+    if cell == 'dcn':
+        g_size = 10
+    else:
+        g_size = 20
+
+    neurons = np.unique(spk[:,0])
+
+    spk_first = spk[(spk[:,1]>trials_start[0]+burst_dur) & (spk[:,1]<=trials_start[1])]
+    spk_first[:,1] -= trials_start[0]+burst_dur
+
+    sdf = np.empty([len(neurons),int(between_start-burst_dur)])
+
+    for neu in range(len(neurons)):
+        spike_times_first = spk_first[spk_first[:,0]==neurons[neu],1]
+        for t in range(int(between_start-burst_dur)):
+            tau_first = t-spike_times_first
+            sdf[neu,t] = sum(1/(math.sqrt(2*math.pi)*g_size)*np.exp(-np.power(tau_first,2)/(2*(g_size**2))))*(10**3)
+    sdf = np.mean(sdf, axis=1)
+
+    return(sdf)
+
+def sdf_baseline_trial(cell, trial, rster,trials_start,burst_dur, between_start):
+    for i in range(len(rster)):
+        if rster[i]["compartment_name"] == cell:
+            pass
+            ids = rster[i]["neurons_idx"].reshape(-1,1)
+            times = rster[i]["times"].reshape(-1,1)
+            spk = np.concatenate((ids, times), axis=1)
+
+    if cell == 'dcn':
+        g_size = 10
+    else:
+        g_size = 20
+
+    neurons = np.unique(spk[:,0])
+
+    spk_first = spk[(spk[:,1]>trials_start[trial]+burst_dur) & (spk[:,1]<=trials_start[trial])]
+    spk_first[:,1] -= trials_start[trial]+burst_dur
+
+    sdf = np.empty([len(neurons),int(between_start-burst_dur)])
+
+    for neu in range(len(neurons)):
+        spike_times_first = spk_first[spk_first[:,0]==neurons[neu],1]
+        for t in range(int(between_start-burst_dur)):
+            tau_first = t-spike_times_first
+            sdf[neu,t] = sum(1/(math.sqrt(2*math.pi)*g_size)*np.exp(-np.power(tau_first,2)/(2*(g_size**2))))*(10**3)
+    sdf = np.mean(sdf, axis=1)
+
+    return(sdf)
+
+def sdf_mean(sdf):
+    sdf_mean = np.mean(sdf, axis=0)
+
+    return(sdf_mean)
+
+def sdf_maf(sdf,  step):
+    sdf_maf = np.convolve(sdf_mean(sdf), np.ones(step), 'valid') / step
+    return(sdf_maf)
+
+def plot_cell_sdf(cell, selected_trials, maf_step):
+    sdf_mean_cell = []
+    sdf_maf_cell = []
+    for trial in selected_trials:
+        sdf_cell = sdf(cell, trial)
+        sdf_mean_cell.append(sdf_mean(sdf_cell))
+        sdf_maf_cell.append(sdf_maf(sdf_cell, maf_step))
+
+    fig = plt.figure()
+    for i in selected_trials[0:-1]:
+        plt.plot(sdf_mean_cell[i], palette[i])
+    plt.title("Second half of " + cell +" pop")
+    plt.title(cell)
+    plt.xlabel("Time [ms]")
+    plt.ylabel("SDF [Hz]")
+    plt.axvline(50, label = "CS start", c = "grey")
+    plt.axvline(300, label = "US start", c = "black")
+    plt.axvline(330, label = "CS & US end ", c = "red")
+
+    plt.xticks(np.arange(0,351,50), np.arange(50,401,50))
+    plt.legend()
+    plt.colorbar(sm, label="Trial")
+    #plt.ylim([100,200])
+    return fig
+
+def plot_cell_sdf_MA(cell, selected_trials, maf_step):
+
+    sdf_mean_cell = []
+    sdf_maf_cell = []
+    for trial in selected_trials:
+        sdf_cell = sdf( cell, trial)
+        sdf_mean_cell.append(sdf_mean(sdf_cell))
+        sdf_maf_cell.append(sdf_maf(sdf_cell, maf_step))
+
+    fig = plt.figure()
+    for i in selected_trials[:-1]:
+        plt.plot(sdf_maf_cell[i], palette[i])
+    plt.title(cell)
+    # plt.ylim([25,55])
+    plt.xticks(np.arange(0,251,50), np.arange(100,351,50))
+    plt.axvline(0, label = "CS start", c = "grey")
+    plt.axvline(250, label = "US start", c = "black")
+    plt.axvline(280, label = "CS & US end ", c = "red")
+    plt.legend()
+    plt.colorbar(sm, label="Trial")
+    plt.show()
+
+    return fig
+
+def sdf_maf_max_dcn(burst_dur, maf_step, burst_dur_cs, n_trials):
+    sdf_maf_ratio = (burst_dur-maf_step)/burst_dur
+    isi_start = int(100*sdf_maf_ratio) #+25
+    isi_end = int(burst_dur_cs*sdf_maf_ratio-1)
+
+    baseline = np.mean(sdf_baseline("", 'dcn'))
+    sdf_maf_max_all = []
+    for j in range(1,n_trials):
+        sdf_f = sdf("dcn", i)
+        sdf_maf_f = sdf_maf(sdf_f,  maf_step)
+        sdf_maf_f -= baseline
+        sdf_maf_f = sdf_maf[isi_start:isi_end]
+        sdf_maf_max = np.max(sdf_maf_f)
+        sdf_maf_max_all.append(sdf_maf_max)
+    sdf_maf_max_all = np.split(np.asarray(sdf_maf_max_all), 10)
+
+    return(sdf_maf_max_all)
+
+def plot_CR(CR):
+    CR_fig = plt.figure()
+    plt.plot(CR)
+    plt.title("Complex responces")
+    plt.ylabel("%")
+    plt.xlabel("10 trial set")
+    return CR_fig
+
+def cr_thr(thr, ratio_f, selected_trials, maf_step, threshold, plot = False):
+    over_threshold = []
+    if plot:
+        fig = plt.figure()
+    for j in selected_trials:
+        
+        sdf_f = sdf( "dcn", j)
+        sdf_maf_f = sdf_maf(sdf_f, maf_step)
+        baseline_f = np.mean(sdf_baseline_trial('dcn', j))
+        if plot:
+            plt.plot(sdf_maf_f - baseline_f, palette[j])
+
+        indx = sdf_maf_f[100:250]> thr
+        if indx.any():   
+            t_cr = np.where(sdf_maf_f[100:250]>threshold)[0][0]
+
+            ratio = sdf_maf_f[100+t_cr]/np.mean(sdf_maf_f[100:100+t_cr])
+            if ratio > ratio_f:
+            # ratio = max(sdf_maf_f[100+t_cr:250])/sdf_maf_f[100+t_cr]
+            
+            # if ratio > 1.25:
+                if plot:
+                    plt.scatter(100+t_cr, sdf_maf_f[100+t_cr], c = palette[j])
+                over_threshold.append(1)
+            else: over_threshold.append(0)
+        else: over_threshold.append(0)
+
+    
+    over_threshold = np.split(np.asarray(over_threshold), 10)
+    CR = np.sum(over_threshold,axis=1)*10
+        # return(over_threshold)
+    if plot:
+        plt.axhline(threshold, label="threshold")
+        plt.title("dcn")
+        plt.xticks(np.arange(0,251,50), np.arange(100,351,50))
+        plt.axvline(0, label = "CS start", c = "grey")
+        plt.axvline(250, label = "US start", c = "black")
+        plt.axvline(280, label = "CS & US end ", c = "red")
+        plt.legend()
+    
+    if plot:
+        return CR, fig
+    else:
+        return CR
+
+def cr_isi(thr, selected_trials, maf_step, threshold, burst_dur, burst_dur_cs, trials_start, rster, between_start,plot = False):
+
+    sdf_maf_ratio = (burst_dur-maf_step)/burst_dur
+    isi_start = int(100*sdf_maf_ratio)
+    isi_end = int(burst_dur_cs*sdf_maf_ratio)
+    baseline = np.mean(sdf_baseline('dcn',  rster,trials_start,burst_dur, between_start))
+
+    over_threshold = []
+    if plot:
+        fig = plt.figure()
+    for j in selected_trials:
+        
+        sdf_f = sdf("dcn", j, rster,trials_start,burst_dur)
+        sdf_maf_f = sdf_maf(sdf_f, maf_step)
+        sdf_maf_f -= baseline
+        if plot:
+            plt.plot(sdf_maf_f, palette[j])
+        sdf_maf_pre_cs = sdf_maf_f[:isi_start]
+        sdf_maf_cs = sdf_maf_f[isi_start:isi_end]
+
+        sdf_maf_pre_cs_over = sdf_maf_pre_cs[sdf_maf_pre_cs >= threshold]
+        if len(sdf_maf_pre_cs_over) > 0:
+            over_threshold.append(0)
+        elif len(sdf_maf_pre_cs_over) == 0:
+            sdf_maf_win_over = sdf_maf_cs[sdf_maf_cs >= threshold]
+            if len(sdf_maf_win_over) == 0:
+                over_threshold.append(0)
+            elif len(sdf_maf_win_over) > 0:
+                for i in range(len(sdf_maf_cs)):
+                    if sdf_maf_cs[i] >= thr:
+                        onset_index = i
+                        break
+                sdf_maf_cs_onset = sdf_maf_cs[onset_index:]
+                if len(sdf_maf_win_over) >= len(sdf_maf_cs_onset)*0.75:
+                    over_threshold.append(1)
+                else:
+                    over_threshold.append(0)
+
+    over_threshold = np.split(np.asarray(over_threshold), 10)
+    CR = np.sum(over_threshold,axis=1)*10
+    if plot:
+        plt.title("dcn")
+        # plt.ylim([25,55])
+        plt.axvline(isi_start, label="isi start")
+        plt.axvline(isi_end, label="isi end")
+        plt.xticks(np.arange(0,251,50), np.arange(100,351,50))
+        plt.axvline(0, label = "CS start", c = "grey")
+        plt.axvline(250, label = "US start", c = "black")
+        plt.axvline(280, label = "CS & US end ", c = "red")
+        plt.ylabel("SDF Norm")
+        plt.xlabel("Time [ms]")
+        plt.legend()
+        plt.colorbar(sm, label="Trial")
+
+    if plot:
+        return CR, fig
+    else:
+        return CR
