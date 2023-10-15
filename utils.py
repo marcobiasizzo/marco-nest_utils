@@ -3,7 +3,7 @@ import numpy as np
 from scipy import signal
 from scipy import io
 from scipy.fft import fft, fftfreq
-from marco_nest_utils import visualizer as vsl
+from nest_utils import visualizer as vsl
 from pathlib import Path
 import pickle
 from scipy.ndimage import gaussian_filter

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.fft import fft, fftfreq
 from scipy import signal
-from marco_nest_utils import utils
+from nest_utils import utils
 from fooof import FOOOF
 from scipy.ndimage import gaussian_filter
 import seaborn as sns
